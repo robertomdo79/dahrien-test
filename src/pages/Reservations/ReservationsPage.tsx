@@ -106,9 +106,12 @@ export function ReservationsPage() {
   }, [deleteReservation, fetchReservations, effectiveEmailFilter, statusFilter, dateFrom, dateTo, selectedReservationId]);
 
   const handleView = useCallback((id: string) => {
-    toast('Reservation details view coming soon!');
-    console.log('View reservation:', id);
-  }, []);
+    // Find the reservation to get its spaceId
+    const reservation = reservations?.find(r => r.id === id);
+    if (reservation?.spaceId) {
+      navigate(`/spaces/${reservation.spaceId}`);
+    }
+  }, [reservations, navigate]);
 
   // Group reservations by date for better visualization
   const groupedReservations = useMemo(() => {
