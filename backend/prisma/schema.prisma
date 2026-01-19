@@ -1,0 +1,112 @@
+// Prisma Schema for Workspace Reservation System
+// This schema defines the data models for a co-working space reservation system
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Place (Lugar) - Represents a building/location
+model Place {
+  id        String   @id @default(uuid())
+  name      String
+  location  String   // Can be coordinates (lat,lng) or full address
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  spaces       Space[]
+  reservations Reservation[] // Direct relation for denormalized queries
+  telemetry    Telemetry[]   // IoT telemetry data
+
+  @@map("places")
+}
+
+// Space (Espacio) - Represents a rentable unit within a Place
+model Space {
+  id          String  @id @default(uuid())
+  placeId     String
+  name        String
+  reference   String? // Optional internal location reference (e.g., "Floor 2, Room 201")
+  capacity    Int
+  description String?
+  image       String? // Path to space image (e.g., "/assets/workspace.png")
+  isActive    Boolean @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  place        Place         @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  reservations Reservation[]
+  telemetry    Telemetry[]   // IoT telemetry data
+
+  @@index([placeId])
+  @@map("spaces")
+}
+
+// Reservation (Reserva) - Represents a client booking
+model Reservation {
+  id          String            @id @default(uuid())
+  spaceId     String
+  placeId     String            // Denormalized for performance: allows direct filtering by place
+                                // Trade-off: Slight data redundancy vs. avoiding JOINs for common queries
+                                // This is acceptable since placeId rarely changes and we gain query performance
+  clientEmail String
+  date        DateTime          @db.Date
+  startTime   DateTime          // Full datetime for the start of reservation
+  endTime     DateTime          // Full datetime for the end of reservation
+  status      ReservationStatus @default(CONFIRMED)
+  notes       String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  // Relations
+  space Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  place Place @relation(fields: [placeId], references: [id], onDelete: Cascade)
+
+  // Indexes for common query patterns
+  @@index([spaceId])
+  @@index([placeId])
+  @@index([clientEmail])
+  @@index([date])
+  @@index([spaceId, date])         // For checking availability of a specific space on a date
+  @@index([clientEmail, date])     // For quota checking per client per week
+  @@map("reservations")
+}
+
+// Reservation status enum
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+// Telemetry - IoT sensor data from spaces
+// Stores environmental readings from MQTT telemetry messages
+model Telemetry {
+  id          String   @id @default(uuid())
+  placeId     String   // Maps to MQTT 'site'
+  spaceId     String   // Maps to MQTT 'office'
+  peopleCount Int?     // Number of people detected
+  co2         Float?   // CO2 level in ppm
+  humidity    Float?   // Humidity percentage
+  temperature Float?   // Temperature in Celsius
+  battery     Float?   // Battery level percentage
+  timestamp   DateTime @default(now())
+  rawData     Json?    // Store original MQTT payload for debugging
+
+  // Relations
+  place Place @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  space Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  @@index([placeId])
+  @@index([spaceId])
+  @@index([timestamp])
+  @@index([spaceId, timestamp])
+  @@map("telemetry")
+}
