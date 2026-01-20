@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { reservationsService } from '@/services';
-import type { Reservation, ReservationFilters, CreateReservationDto, PaginationMeta } from '@/types';
+import type { Reservation, ReservationFilters, CreateReservationDto, UpdateReservationDto, PaginationMeta } from '@/types';
 import toast from 'react-hot-toast';
 
 interface ReservationsState {
@@ -16,6 +16,7 @@ interface ReservationsState {
   fetchReservations: (filters?: ReservationFilters) => Promise<void>;
   fetchReservationById: (id: string) => Promise<void>;
   createReservation: (data: CreateReservationDto) => Promise<Reservation | null>;
+  updateReservation: (id: string, data: UpdateReservationDto) => Promise<Reservation | null>;
   cancelReservation: (id: string) => Promise<boolean>;
   deleteReservation: (id: string) => Promise<boolean>;
   setFilters: (filters: ReservationFilters) => void;
@@ -86,6 +87,28 @@ export const useReservationsStore = create<ReservationsState>((set, get) => ({
         error: error instanceof Error ? error.message : 'Failed to create reservation',
         isSubmitting: false 
       });
+      return null;
+    }
+  },
+
+  updateReservation: async (id: string, data: UpdateReservationDto) => {
+    set({ isSubmitting: true, error: null });
+    
+    try {
+      const reservation = await reservationsService.update(id, data);
+      toast.success('Reservation updated successfully!');
+      
+      // Refresh the list
+      await get().fetchReservations();
+      
+      set({ isSubmitting: false });
+      return reservation;
+    } catch (error) {
+      set({ 
+        error: error instanceof Error ? error.message : 'Failed to update reservation',
+        isSubmitting: false 
+      });
+      toast.error('Failed to update reservation');
       return null;
     }
   },

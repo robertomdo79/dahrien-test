@@ -14,10 +14,10 @@ interface ReservationCardProps {
   reservation: Reservation;
   onCancel?: (id: string) => void;
   onDelete?: (id: string) => void;
-  onView?: (id: string) => void;
+  onEdit?: (reservation: Reservation) => void;
 }
 
-export function ReservationCard({ reservation, onCancel, onDelete, onView }: ReservationCardProps) {
+export function ReservationCard({ reservation, onCancel, onDelete, onEdit }: ReservationCardProps) {
   const statusConfig: Record<ReservationStatus, { variant: 'success' | 'warning' | 'danger' | 'info' | 'default'; label: string }> = {
     CONFIRMED: { variant: 'success', label: 'Confirmed' },
     PENDING: { variant: 'warning', label: 'Pending' },
@@ -29,10 +29,10 @@ export function ReservationCard({ reservation, onCancel, onDelete, onView }: Res
   const canCancel = reservation.status === 'CONFIRMED' || reservation.status === 'PENDING';
 
   return (
-    <Card variant="elevated" padding="none" className="overflow-hidden">
+    <Card variant="elevated" padding="none" className="overflow-visible">
       <div className="flex">
         {/* Date sidebar */}
-        <div className="w-24 flex-shrink-0 bg-gradient-to-br from-primary-500 to-primary-600 text-white p-4 flex flex-col items-center justify-center">
+        <div className="w-24 flex-shrink-0 bg-gradient-to-br from-primary-500 to-primary-600 text-white p-4 flex flex-col items-center justify-center rounded-l-2xl">
           <span className="text-3xl font-bold font-display">
             {formatDate(reservation.date, 'dd')}
           </span>
@@ -70,17 +70,17 @@ export function ReservationCard({ reservation, onCancel, onDelete, onView }: Res
               <MenuButton className="p-1 rounded-lg hover:bg-surface-100 text-surface-400 hover:text-surface-600 transition-colors">
                 <EllipsisVerticalIcon className="h-5 w-5" />
               </MenuButton>
-              <MenuItems className="absolute right-0 mt-1 w-40 bg-white rounded-xl shadow-lg border border-surface-100 py-1 z-10 focus:outline-none">
-                {onView && (
+              <MenuItems className="absolute right-0 mt-1 w-40 bg-white rounded-xl shadow-lg border border-surface-100 py-1 z-50 focus:outline-none">
+                {onEdit && (
                   <MenuItem>
                     {({ active }) => (
                       <button
-                        onClick={() => onView(reservation.id)}
+                        onClick={() => onEdit(reservation)}
                         className={`w-full text-left px-4 py-2 text-sm ${
                           active ? 'bg-surface-50 text-surface-900' : 'text-surface-600'
                         }`}
                       >
-                        View Details
+                        Edit
                       </button>
                     )}
                   </MenuItem>

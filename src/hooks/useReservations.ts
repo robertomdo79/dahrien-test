@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { useReservationsStore } from '@/context';
-import type { ReservationFilters, CreateReservationDto } from '@/types';
+import type { ReservationFilters, CreateReservationDto, UpdateReservationDto } from '@/types';
 
 interface UseReservationsOptions {
   autoFetch?: boolean;
@@ -22,6 +22,7 @@ export function useReservations(options: UseReservationsOptions = {}) {
     fetchReservations,
     fetchReservationById,
     createReservation,
+    updateReservation,
     cancelReservation,
     deleteReservation,
     setFilters,
@@ -81,6 +82,11 @@ export function useReservations(options: UseReservationsOptions = {}) {
     return await createReservation(data);
   }, [createReservation]);
 
+  // Update reservation with callback
+  const submitUpdateReservation = useCallback(async (id: string, data: UpdateReservationDto) => {
+    return await updateReservation(id, data);
+  }, [updateReservation]);
+
   return {
     // Data
     reservations,
@@ -97,6 +103,7 @@ export function useReservations(options: UseReservationsOptions = {}) {
     fetchReservations,
     fetchReservationById,
     createReservation: submitReservation,
+    updateReservation: submitUpdateReservation,
     cancelReservation,
     deleteReservation,
     setFilters,

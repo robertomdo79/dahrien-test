@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { useSpacesStore } from '@/context';
-import type { SpaceFilters, CreateSpaceDto } from '@/types';
+import type { SpaceFilters, CreateSpaceDto, UpdateSpaceDto } from '@/types';
 
 interface UseSpacesOptions {
   autoFetch?: boolean;
@@ -22,6 +22,8 @@ export function useSpaces(options: UseSpacesOptions = {}) {
     fetchSpaces,
     fetchSpaceById,
     createSpace,
+    updateSpace,
+    deleteSpace,
     setFilters,
     clearSelectedSpace,
     reset,
@@ -71,6 +73,16 @@ export function useSpaces(options: UseSpacesOptions = {}) {
     return await createSpace(data);
   }, [createSpace]);
 
+  // Update space with callback
+  const submitUpdateSpace = useCallback(async (id: string, data: UpdateSpaceDto) => {
+    return await updateSpace(id, data);
+  }, [updateSpace]);
+
+  // Delete space with callback
+  const submitDeleteSpace = useCallback(async (id: string) => {
+    return await deleteSpace(id);
+  }, [deleteSpace]);
+
   return {
     // Data
     spaces,
@@ -87,6 +99,8 @@ export function useSpaces(options: UseSpacesOptions = {}) {
     fetchSpaces,
     fetchSpaceById,
     createSpace: submitSpace,
+    updateSpace: submitUpdateSpace,
+    deleteSpace: submitDeleteSpace,
     setFilters,
     clearSelectedSpace,
     reset,

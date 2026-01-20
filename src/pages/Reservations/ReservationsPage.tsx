@@ -1,12 +1,12 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CalendarDaysIcon, PlusIcon } from '@heroicons/react/24/outline';
-import { ReservationCard, ReservationFilters } from '@/components/reservations';
+import { ReservationCard, ReservationFilters, EditReservationModal } from '@/components/reservations';
 import { Button, Spinner, EmptyState, Card, ConfirmationModal } from '@/components/ui';
 import { useReservations } from '@/hooks';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useUserStore, isAdmin } from '@/context';
-import toast from 'react-hot-toast';
+import type { Reservation, UpdateReservationDto } from '@/types';
 
 export function ReservationsPage() {
   const navigate = useNavigate();
@@ -18,11 +18,14 @@ export function ReservationsPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [pageSize, setPageSize] = useState(5);
 
   // Modal state
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedReservationId, setSelectedReservationId] = useState<string | null>(null);
+  const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
 
   // Debounce email filter
   const debouncedEmail = useDebounce(emailFilter, 500);
@@ -38,6 +41,7 @@ export function ReservationsPage() {
     goToPage,
     cancelReservation,
     deleteReservation,
+    updateReservation,
     fetchReservations
   } = useReservations({
     autoFetch: false, // We'll handle fetching manually
@@ -50,10 +54,10 @@ export function ReservationsPage() {
       status: (statusFilter || undefined) as 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED' | undefined,
       dateFrom: dateFrom || undefined,
       dateTo: dateTo || undefined,
-      pageSize: 20,
+      pageSize,
       page: 1,
     });
-  }, [effectiveEmailFilter, statusFilter, dateFrom, dateTo, fetchReservations, userIsAdmin]);
+  }, [effectiveEmailFilter, statusFilter, dateFrom, dateTo, pageSize, fetchReservations, userIsAdmin]);
 
   // Open cancel modal
   const handleCancelClick = useCallback((id: string) => {
@@ -81,10 +85,10 @@ export function ReservationsPage() {
         status: (statusFilter || undefined) as 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED' | undefined,
         dateFrom: dateFrom || undefined,
         dateTo: dateTo || undefined,
-        pageSize: 20,
+        pageSize,
       });
     }
-  }, [cancelReservation, fetchReservations, effectiveEmailFilter, statusFilter, dateFrom, dateTo, selectedReservationId]);
+  }, [cancelReservation, fetchReservations, effectiveEmailFilter, statusFilter, dateFrom, dateTo, pageSize, selectedReservationId]);
 
   // Confirm delete
   const handleConfirmDelete = useCallback(async () => {
@@ -100,18 +104,22 @@ export function ReservationsPage() {
         status: (statusFilter || undefined) as 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED' | undefined,
         dateFrom: dateFrom || undefined,
         dateTo: dateTo || undefined,
-        pageSize: 20,
+        pageSize,
       });
     }
-  }, [deleteReservation, fetchReservations, effectiveEmailFilter, statusFilter, dateFrom, dateTo, selectedReservationId]);
+  }, [deleteReservation, fetchReservations, effectiveEmailFilter, statusFilter, dateFrom, dateTo, pageSize, selectedReservationId]);
 
-  const handleView = useCallback((id: string) => {
-    // Find the reservation to get its spaceId
-    const reservation = reservations?.find(r => r.id === id);
-    if (reservation?.spaceId) {
-      navigate(`/spaces/${reservation.spaceId}`);
-    }
-  }, [reservations, navigate]);
+  // Open edit modal
+  const handleEditClick = useCallback((reservation: Reservation) => {
+    setSelectedReservation(reservation);
+    setEditModalOpen(true);
+  }, []);
+
+  // Handle update reservation
+  const handleUpdateReservation = useCallback(async (id: string, data: UpdateReservationDto) => {
+    const result = await updateReservation(id, data);
+    return result;
+  }, [updateReservation]);
 
   // Group reservations by date for better visualization
   const groupedReservations = useMemo(() => {
@@ -226,7 +234,7 @@ export function ReservationsPage() {
                       reservation={reservation}
                       onCancel={handleCancelClick}
                       onDelete={userIsAdmin ? handleDeleteClick : undefined}
-                      onView={handleView}
+                      onEdit={handleEditClick}
                     />
                   </div>
                 ))}
@@ -244,27 +252,50 @@ export function ReservationsPage() {
       )}
 
       {/* Pagination */}
-      {pagination && pagination.totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 pt-8">
-          <Button
-            variant="ghost"
-            disabled={!pagination.hasPreviousPage}
-            onClick={() => goToPage(pagination.page - 1)}
-          >
-            Previous
-          </Button>
-          
-          <span className="px-4 py-2 text-sm text-surface-600">
-            Page {pagination.page} of {pagination.totalPages}
-          </span>
-          
-          <Button
-            variant="ghost"
-            disabled={!pagination.hasNextPage}
-            onClick={() => goToPage(pagination.page + 1)}
-          >
-            Next
-          </Button>
+      {pagination && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 border-t border-surface-100">
+          {/* Page size selector */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-surface-500">Show</span>
+            <select
+              value={pageSize}
+              onChange={(e) => setPageSize(Number(e.target.value))}
+              className="px-3 py-1.5 text-sm border border-surface-200 rounded-lg bg-white text-surface-700 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+            </select>
+            <span className="text-sm text-surface-500">per page</span>
+          </div>
+
+          {/* Page navigation */}
+          {pagination.totalPages > 1 && (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={!pagination.hasPreviousPage}
+                onClick={() => goToPage(pagination.page - 1)}
+              >
+                Previous
+              </Button>
+              
+              <span className="px-4 py-2 text-sm text-surface-600">
+                Page {pagination.page} of {pagination.totalPages}
+              </span>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={!pagination.hasNextPage}
+                onClick={() => goToPage(pagination.page + 1)}
+              >
+                Next
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
@@ -298,6 +329,18 @@ export function ReservationsPage() {
         cancelLabel="Go Back"
         variant="danger"
         isLoading={isSubmitting}
+      />
+
+      {/* Edit Reservation Modal */}
+      <EditReservationModal
+        isOpen={editModalOpen}
+        onClose={() => {
+          setEditModalOpen(false);
+          setSelectedReservation(null);
+        }}
+        onSubmit={handleUpdateReservation}
+        reservation={selectedReservation}
+        isSubmitting={isSubmitting}
       />
     </div>
   );

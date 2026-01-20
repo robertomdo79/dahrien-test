@@ -60,7 +60,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
                   </button>
                 </div>
               )}
-              <div className={title ? '' : 'pt-6'}>{children}</div>
+              <div className={`px-6 pb-6 ${title ? 'pt-4' : 'pt-6'}`}>{children}</div>
             </DialogPanel>
           </TransitionChild>
         </div>

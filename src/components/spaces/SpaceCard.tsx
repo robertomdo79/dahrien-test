@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { UsersIcon, MapPinIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
+import { UsersIcon, MapPinIcon, CheckCircleIcon, XCircleIcon, PencilIcon } from '@heroicons/react/24/outline';
 import { Card, Badge } from '@/components/ui';
 import type { Space } from '@/types';
 
@@ -46,9 +46,11 @@ const getSpaceImage = (space: Space): string | null => {
 interface SpaceCardProps {
   space: Space;
   onBookClick?: (space: Space) => void;
+  onEditClick?: (space: Space) => void;
+  isAdmin?: boolean;
 }
 
-export function SpaceCard({ space, onBookClick }: SpaceCardProps) {
+export function SpaceCard({ space, onBookClick, onEditClick, isAdmin }: SpaceCardProps) {
   const imageSrc = getSpaceImage(space);
 
   return (
@@ -95,6 +97,21 @@ export function SpaceCard({ space, onBookClick }: SpaceCardProps) {
           <UsersIcon className="h-4 w-4 text-primary-600" />
           <span>{space.capacity}</span>
         </div>
+
+        {/* Admin edit button */}
+        {isAdmin && onEditClick && (
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onEditClick(space);
+            }}
+            className="absolute bottom-3 right-3 flex items-center justify-center w-8 h-8 bg-white/90 backdrop-blur-sm rounded-lg text-surface-600 hover:text-primary-600 hover:bg-white transition-all shadow-sm"
+            title="Edit space"
+          >
+            <PencilIcon className="h-4 w-4" />
+          </button>
+        )}
       </div>
 
       <div className="p-5">

@@ -1,11 +1,11 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Squares2X2Icon, PlusIcon, BuildingOfficeIcon } from '@heroicons/react/24/outline';
-import { SpaceCard, SpaceFilters, CreateSpaceModal } from '@/components/spaces';
+import { SpaceCard, SpaceFilters, CreateSpaceModal, EditSpaceModal } from '@/components/spaces';
 import { Button, Spinner, EmptyState } from '@/components/ui';
 import { useSpaces } from '@/hooks';
 import { useUserStore, isAdmin } from '@/context';
-import type { Space, CreateSpaceDto } from '@/types';
+import type { Space, CreateSpaceDto, UpdateSpaceDto } from '@/types';
 
 export function HomePage() {
   const navigate = useNavigate();
@@ -16,14 +16,30 @@ export function HomePage() {
   const [placeFilter, setPlaceFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedSpace, setSelectedSpace] = useState<Space | null>(null);
 
-  const { spaces, isLoading, isSubmitting, pagination, goToPage, fetchSpaces, createSpace } = useSpaces({
+  const { spaces, isLoading, isSubmitting, pagination, goToPage, fetchSpaces, createSpace, updateSpace, deleteSpace } = useSpaces({
     autoFetch: false, // We'll handle fetching manually
   });
 
   const handleCreateSpace = async (data: CreateSpaceDto) => {
     const result = await createSpace(data);
     return result;
+  };
+
+  const handleUpdateSpace = async (id: string, data: UpdateSpaceDto) => {
+    const result = await updateSpace(id, data);
+    return result;
+  };
+
+  const handleDeleteSpace = async (id: string) => {
+    return await deleteSpace(id);
+  };
+
+  const handleEditClick = (space: Space) => {
+    setSelectedSpace(space);
+    setIsEditModalOpen(true);
   };
 
   // Fetch spaces when filters change
@@ -149,7 +165,12 @@ export function HomePage() {
               className="animate-slide-up"
               style={{ animationDelay: `${index * 50}ms` }}
             >
-              <SpaceCard space={space} onBookClick={handleBookClick} />
+              <SpaceCard 
+                space={space} 
+                onBookClick={handleBookClick} 
+                onEditClick={userIsAdmin ? handleEditClick : undefined}
+                isAdmin={userIsAdmin}
+              />
             </div>
           ))}
         </div>
@@ -198,6 +219,21 @@ export function HomePage() {
           isOpen={isCreateModalOpen}
           onClose={() => setIsCreateModalOpen(false)}
           onSubmit={handleCreateSpace}
+          isSubmitting={isSubmitting}
+        />
+      )}
+
+      {/* Edit Space Modal (Admin Only) */}
+      {userIsAdmin && (
+        <EditSpaceModal
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setSelectedSpace(null);
+          }}
+          onSubmit={handleUpdateSpace}
+          onDelete={handleDeleteSpace}
+          space={selectedSpace}
           isSubmitting={isSubmitting}
         />
       )}

@@ -35,15 +35,33 @@ SGRET is a modern workspace reservation platform designed for co-working spaces.
 - **Reservations System**: Full booking system with conflict detection
 - **Real-time Dashboard**: View and manage all resources
 
+### Admin Features
+- **Space CRUD Operations**: Admins can create, edit, and delete spaces
+- **Reservation Management**: Full control over all reservations (view, edit, cancel, delete)
+- **IoT Dashboard**: Monitor real-time environmental data from sensors
+
+### User Features
+- **Browse Spaces**: View available workspaces with filtering and search
+- **Make Reservations**: Book spaces with date and time selection
+- **Edit Reservations**: Modify existing reservations (date, time, notes)
+- **Cancel Reservations**: Cancel pending or confirmed bookings
+- **Configurable Pagination**: Choose how many items to display per page (5, 10, 20, 50)
+
 ### Business Rules
 - **Conflict Detection**: Prevents double-booking for overlapping time slots
 - **Weekly Quota**: Limits clients to 3 active reservations per week
 - **Soft Delete**: Reservations can be cancelled (status change) or permanently deleted
 
+### Security
+- **API Key Authentication**: All API endpoints protected with `x-api-key` header
+- **256-bit Secure Keys**: Cryptographically secure API keys
+- **Role-based Access**: Different capabilities for users and administrators
+
 ### IoT Integration
 - **Environmental Monitoring**: Temperature, humidity, and CO2 levels
 - **Occupancy Tracking**: Real-time people count per space
 - **MQTT Protocol**: Standard IoT communication protocol
+- **Telemetry Generator**: Built-in tool for testing sensor data
 
 ## 🛠️ Tech Stack
 
@@ -57,7 +75,10 @@ SGRET is a modern workspace reservation platform designed for co-working spaces.
 | Zustand | State Management |
 | React Router 7 | Routing |
 | Axios | HTTP Client |
+| HeadlessUI | Accessible Components |
+| Heroicons | Icon Library |
 | date-fns | Date Utilities |
+| react-hot-toast | Notifications |
 
 ### Backend
 | Technology | Purpose |
@@ -191,6 +212,16 @@ sgret/
 | `MQTT_TELEMETRY_TOPIC` | MQTT topic pattern | `coworking/+/+/telemetry` |
 | `LOG_LEVEL` | Logging level | `debug` |
 
+### Generating a Secure API Key
+
+Generate a cryptographically secure 256-bit API key:
+
+```bash
+node -e "console.log('SGRET_' + require('crypto').randomBytes(32).toString('hex').toUpperCase())"
+```
+
+**Important**: Use the same API key in both frontend (`VITE_API_KEY`) and backend (`API_KEY`) `.env` files.
+
 ## 📡 API Documentation
 
 All API endpoints require the `x-api-key` header for authentication.
@@ -205,22 +236,32 @@ http://localhost:3000/api
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/health` | Health check (no auth) |
+| **Places** | | |
 | GET | `/places` | List all places |
 | POST | `/places` | Create a place |
 | GET | `/places/:id` | Get place by ID |
 | PUT | `/places/:id` | Update place |
 | DELETE | `/places/:id` | Delete place |
+| **Spaces** | | |
 | GET | `/spaces` | List spaces (paginated) |
 | POST | `/spaces` | Create a space |
 | GET | `/spaces/:id` | Get space by ID |
 | PUT | `/spaces/:id` | Update space |
 | DELETE | `/spaces/:id` | Delete space |
+| **Reservations** | | |
 | GET | `/reservations` | List reservations (paginated) |
 | POST | `/reservations` | Create reservation |
 | GET | `/reservations/:id` | Get reservation by ID |
 | PUT | `/reservations/:id` | Update reservation |
 | PATCH | `/reservations/:id/cancel` | Cancel reservation |
 | DELETE | `/reservations/:id` | Delete reservation |
+| **Telemetry (IoT)** | | |
+| GET | `/telemetry` | List telemetry data (paginated) |
+| GET | `/telemetry/latest` | Get latest readings by place |
+| GET | `/telemetry/space/:spaceId` | Get telemetry for a space |
+| POST | `/telemetry/generate` | Start telemetry generator |
+| DELETE | `/telemetry/generate` | Stop telemetry generator |
+| GET | `/telemetry/generate/status` | Get generator status |
 
 For detailed API documentation, see [Backend README](./backend/README.md).
 
