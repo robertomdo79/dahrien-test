@@ -98,6 +98,15 @@ export class ReservationService {
     const startTime = this.parseTime(data.date, data.startTime);
     const endTime = this.parseTime(data.date, data.endTime);
 
+    logger.debug('Parsed reservation dates', {
+      inputDate: data.date,
+      inputStartTime: data.startTime,
+      inputEndTime: data.endTime,
+      parsedDate: reservationDate.toISOString(),
+      parsedStartTime: startTime.toISOString(),
+      parsedEndTime: endTime.toISOString(),
+    });
+
     // Validate time range
     if (endTime <= startTime) {
       throw new BadRequestError('End time must be after start time');
@@ -110,6 +119,8 @@ export class ReservationService {
       startTime,
       endTime
     );
+
+    logger.debug('Conflict check result', { hasConflict, spaceId: data.spaceId });
 
     if (hasConflict) {
       throw new ConflictError(

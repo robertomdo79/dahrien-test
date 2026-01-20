@@ -112,6 +112,13 @@ async function main() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   
+  // Helper to create date at specific time without mutating
+  const createDateTime = (baseDate: Date, hours: number, minutes: number = 0): Date => {
+    const date = new Date(baseDate);
+    date.setHours(hours, minutes, 0, 0);
+    return date;
+  };
+
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
 
@@ -124,9 +131,9 @@ async function main() {
         spaceId: spaces1[0].id,
         placeId: place1.id,
         clientEmail: 'john.doe@example.com',
-        date: tomorrow,
-        startTime: new Date(tomorrow.setHours(9, 0, 0, 0)),
-        endTime: new Date(tomorrow.setHours(11, 0, 0, 0)),
+        date: new Date(tomorrow),
+        startTime: createDateTime(tomorrow, 9, 0),
+        endTime: createDateTime(tomorrow, 11, 0),
         status: 'CONFIRMED',
         notes: 'Team standup meeting',
       },
@@ -136,9 +143,9 @@ async function main() {
         spaceId: spaces1[1].id,
         placeId: place1.id,
         clientEmail: 'jane.smith@example.com',
-        date: tomorrow,
-        startTime: new Date(tomorrow.setHours(14, 0, 0, 0)),
-        endTime: new Date(tomorrow.setHours(17, 0, 0, 0)),
+        date: new Date(tomorrow),
+        startTime: createDateTime(tomorrow, 14, 0),
+        endTime: createDateTime(tomorrow, 17, 0),
         status: 'CONFIRMED',
         notes: 'Deep work session',
       },
@@ -148,9 +155,9 @@ async function main() {
         spaceId: spaces2[0].id,
         placeId: place2.id,
         clientEmail: 'robbiemdo79@gmail.com',
-        date: nextWeek,
-        startTime: new Date(nextWeek.setHours(10, 0, 0, 0)),
-        endTime: new Date(nextWeek.setHours(12, 0, 0, 0)),
+        date: new Date(nextWeek),
+        startTime: createDateTime(nextWeek, 10, 0),
+        endTime: createDateTime(nextWeek, 12, 0),
         status: 'PENDING',
         notes: 'Design review',
       },
@@ -160,9 +167,9 @@ async function main() {
         spaceId: spaces1[2].id,
         placeId: place1.id,
         clientEmail: 'robbiemdo79@gmail.com',
-        date: tomorrow,
-        startTime: new Date(tomorrow.setHours(10, 0, 0, 0)),
-        endTime: new Date(tomorrow.setHours(14, 0, 0, 0)),
+        date: new Date(tomorrow),
+        startTime: createDateTime(tomorrow, 10, 0),
+        endTime: createDateTime(tomorrow, 14, 0),
         status: 'CONFIRMED',
         notes: 'Coworking session',
       },

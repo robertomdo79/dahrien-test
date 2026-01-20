@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { useSpacesStore } from '@/context';
-import type { SpaceFilters } from '@/types';
+import type { SpaceFilters, CreateSpaceDto } from '@/types';
 
 interface UseSpacesOptions {
   autoFetch?: boolean;
@@ -17,9 +17,11 @@ export function useSpaces(options: UseSpacesOptions = {}) {
     pagination,
     filters,
     isLoading,
+    isSubmitting,
     error,
     fetchSpaces,
     fetchSpaceById,
+    createSpace,
     setFilters,
     clearSelectedSpace,
     reset,
@@ -64,6 +66,11 @@ export function useSpaces(options: UseSpacesOptions = {}) {
     fetchSpaces(filters);
   }, [filters, fetchSpaces]);
 
+  // Create space with callback
+  const submitSpace = useCallback(async (data: CreateSpaceDto) => {
+    return await createSpace(data);
+  }, [createSpace]);
+
   return {
     // Data
     spaces,
@@ -73,11 +80,13 @@ export function useSpaces(options: UseSpacesOptions = {}) {
     
     // State
     isLoading,
+    isSubmitting,
     error,
     
     // Actions
     fetchSpaces,
     fetchSpaceById,
+    createSpace: submitSpace,
     setFilters,
     clearSelectedSpace,
     reset,

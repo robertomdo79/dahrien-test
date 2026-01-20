@@ -6,6 +6,7 @@ import {
   PaginationParams,
   ReservationFilters 
 } from '../types/index.js';
+import { logger } from '../utils/logger.js';
 
 export interface ReservationWithRelations extends Reservation {
   space: {
@@ -214,10 +215,32 @@ export class ReservationRepository {
     endTime: Date,
     excludeReservationId?: string
   ): Promise<boolean> {
+    // Create date range for the same day (start of day to end of day)
+    // This avoids timezone/timestamp comparison issues
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    logger.debug('Checking for overlapping reservations', {
+      spaceId,
+      dateInput: date.toISOString(),
+      startOfDay: startOfDay.toISOString(),
+      endOfDay: endOfDay.toISOString(),
+      startTime: startTime.toISOString(),
+      endTime: endTime.toISOString(),
+      excludeReservationId,
+    });
+
     const overlapping = await this.prisma.reservation.findFirst({
       where: {
         spaceId,
-        date,
+        // Compare date as a range (same day) instead of exact match
+        date: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
         status: { in: ['PENDING', 'CONFIRMED'] },
         ...(excludeReservationId && { id: { not: excludeReservationId } }),
         // Check for time overlap:
@@ -229,6 +252,17 @@ export class ReservationRepository {
         ],
       },
     });
+
+    if (overlapping) {
+      logger.debug('Found overlapping reservation', {
+        overlappingId: overlapping.id,
+        overlappingDate: overlapping.date,
+        overlappingStartTime: overlapping.startTime,
+        overlappingEndTime: overlapping.endTime,
+      });
+    } else {
+      logger.debug('No overlapping reservation found');
+    }
 
     return overlapping !== null;
   }

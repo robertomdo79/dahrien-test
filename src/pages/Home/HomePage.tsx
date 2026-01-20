@@ -1,20 +1,30 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Squares2X2Icon, PlusIcon } from '@heroicons/react/24/outline';
-import { SpaceCard, SpaceFilters } from '@/components/spaces';
+import { Squares2X2Icon, PlusIcon, BuildingOfficeIcon } from '@heroicons/react/24/outline';
+import { SpaceCard, SpaceFilters, CreateSpaceModal } from '@/components/spaces';
 import { Button, Spinner, EmptyState } from '@/components/ui';
 import { useSpaces } from '@/hooks';
-import type { Space } from '@/types';
+import { useUserStore, isAdmin } from '@/context';
+import type { Space, CreateSpaceDto } from '@/types';
 
 export function HomePage() {
   const navigate = useNavigate();
+  const { currentUser } = useUserStore();
+  const userIsAdmin = isAdmin(currentUser);
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [placeFilter, setPlaceFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  const { spaces, isLoading, pagination, goToPage, fetchSpaces } = useSpaces({
+  const { spaces, isLoading, isSubmitting, pagination, goToPage, fetchSpaces, createSpace } = useSpaces({
     autoFetch: false, // We'll handle fetching manually
   });
+
+  const handleCreateSpace = async (data: CreateSpaceDto) => {
+    const result = await createSpace(data);
+    return result;
+  };
 
   // Fetch spaces when filters change
   useEffect(() => {
@@ -75,6 +85,17 @@ export function HomePage() {
               <PlusIcon className="h-5 w-5" />
               Quick Reservation
             </Button>
+            {userIsAdmin && (
+              <Button
+                size="lg"
+                variant="outline"
+                className="bg-white/10 border-white/30 text-white hover:bg-white/20"
+                onClick={() => setIsCreateModalOpen(true)}
+              >
+                <BuildingOfficeIcon className="h-5 w-5" />
+                Create Space
+              </Button>
+            )}
           </div>
         </div>
 
@@ -169,6 +190,16 @@ export function HomePage() {
             Next
           </Button>
         </div>
+      )}
+
+      {/* Create Space Modal (Admin Only) */}
+      {userIsAdmin && (
+        <CreateSpaceModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onSubmit={handleCreateSpace}
+          isSubmitting={isSubmitting}
+        />
       )}
     </div>
   );
