@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { ArrowLeftIcon, CalendarDaysIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, CalendarDaysIcon, ClockIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { Card, Button, Input, Select } from '@/components/ui';
 import { useSpaces, usePlaces, useReservations } from '@/hooks';
 import { getTodayDate, generateTimeSlots } from '@/utils';
@@ -26,6 +26,7 @@ export function NewReservationPage() {
     notes: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Generate time slots
   const timeSlots = generateTimeSlots(8, 20, 30);
@@ -65,9 +66,13 @@ export function NewReservationPage() {
 
   const handleInputChange = (field: keyof CreateReservationDto, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
+    // Clear errors when user makes changes
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: '' }));
+    }
+    // Clear submit error when user changes any field
+    if (submitError) {
+      setSubmitError(null);
     }
   };
 
@@ -106,14 +111,22 @@ export function NewReservationPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitError(null);
 
     if (!validateForm()) {
       return;
     }
 
-    const reservation = await createReservation(formData);
-    if (reservation) {
-      navigate('/reservations');
+    try {
+      const reservation = await createReservation(formData);
+      if (reservation) {
+        navigate('/reservations');
+      } else {
+        // If no reservation returned but no exception, there was an error
+        setSubmitError('Unable to create reservation. The selected time slot may not be available.');
+      }
+    } catch {
+      setSubmitError('Unable to create reservation. Please check your selection and try again.');
     }
   };
 
@@ -256,6 +269,17 @@ export function NewReservationPage() {
               <li>Cancel at least 24 hours before your reservation</li>
             </ul>
           </div>
+
+          {/* Error Alert */}
+          {submitError && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+              <ExclamationTriangleIcon className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-red-800">Reservation Failed</p>
+                <p className="text-sm text-red-600 mt-1">{submitError}</p>
+              </div>
+            </div>
+          )}
 
           {/* Submit */}
           <div className="flex gap-4 pt-4">

@@ -93,10 +93,8 @@ export class ReservationService {
       throw new BadRequestError(`Space with id '${data.spaceId}' does not exist`);
     }
 
-    // Parse dates
-    const reservationDate = new Date(data.date);
-    reservationDate.setHours(0, 0, 0, 0);
-
+    // Parse dates using local timezone to avoid date shifting issues
+    const reservationDate = this.parseDate(data.date);
     const startTime = this.parseTime(data.date, data.startTime);
     const endTime = this.parseTime(data.date, data.endTime);
 
@@ -185,7 +183,7 @@ export class ReservationService {
     // If dates/times are being updated, validate them
     if (data.date || data.startTime || data.endTime) {
       const reservationDate = data.date 
-        ? new Date(data.date) 
+        ? this.parseDate(data.date) 
         : existing.date;
       
       const baseDate = data.date || existing.date.toISOString().split('T')[0];
@@ -227,9 +225,7 @@ export class ReservationService {
     const updateData: Parameters<typeof this.repository.update>[1] = {};
     
     if (data.date) {
-      const newDate = new Date(data.date);
-      newDate.setHours(0, 0, 0, 0);
-      updateData.date = newDate;
+      updateData.date = this.parseDate(data.date);
     }
     if (data.startTime) {
       updateData.startTime = this.parseTime(
@@ -300,11 +296,22 @@ export class ReservationService {
       return new Date(timeStr);
     }
 
-    // Otherwise, combine date and time
+    // Parse date components to avoid timezone issues
+    // dateStr format: "YYYY-MM-DD"
+    const [year, month, day] = dateStr.split('-').map(Number);
     const [hours, minutes] = timeStr.split(':').map(Number);
-    const date = new Date(dateStr);
-    date.setHours(hours, minutes, 0, 0);
-    return date;
+    
+    // Create date using local timezone components
+    return new Date(year, month - 1, day, hours, minutes, 0, 0);
+  }
+
+  /**
+   * Parse date string to Date object at midnight local time
+   * Avoids timezone issues with new Date("YYYY-MM-DD")
+   */
+  private parseDate(dateStr: string): Date {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return new Date(year, month - 1, day, 0, 0, 0, 0);
   }
 
   /**
