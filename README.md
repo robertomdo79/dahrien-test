@@ -21,7 +21,6 @@ A full-stack application for managing co-working space reservations with IoT int
 - [IoT Integration](#iot-integration)
 - [Testing](#testing)
 - [Deployment](#deployment)
-- [License](#license)
 
 ## Overview
 
